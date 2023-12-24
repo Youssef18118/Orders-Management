@@ -14,6 +14,7 @@ public class Customer {
     private String Email;
     private String Password;
     private double Balance;
+    private String Location;
     private List<Notification> NotificationList;
 
 }

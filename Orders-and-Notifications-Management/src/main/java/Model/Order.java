@@ -1,19 +1,20 @@
 package Model;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 
-public class Order {
+public abstract class Order {
 
-    private int OrderID;
-    private double TotalPrice;
-    private Shipping shipping;
+    protected int OrderID;
+    protected double TotalPrice;
+    protected Shipping shipping;
+    protected List<Product> Products;
 
-    // CalculateTotalPrice(): double
-    // addOrder(Order O): Void
-    // removeOrder(Order O): Void
-    // GetChild(OrderID: int): Order
+    public abstract double CalculateTotalPrice();
+
 }
