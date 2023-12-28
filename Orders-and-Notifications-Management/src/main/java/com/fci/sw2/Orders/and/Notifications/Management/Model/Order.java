@@ -13,8 +13,8 @@ public abstract class Order {
     protected int OrderID;
     protected double TotalPrice;
     protected Shipping shipping;
-    protected List<Product> Products;
+    protected String Type;
 
-    public abstract double CalculateTotalPrice();
+    // public abstract double CalculateTotalPrice();
 
 }

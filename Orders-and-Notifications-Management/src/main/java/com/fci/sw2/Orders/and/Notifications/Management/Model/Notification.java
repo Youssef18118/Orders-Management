@@ -9,4 +9,9 @@ import lombok.Setter;
 public class Notification {
     private int NotificationID;
     private String Template;
+    private int CustomerID;
+
+    private Template template;
+    private Channel channel;
+
 }

@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @Getter
 
-
 public class Customer {
     private int customerId;
     private String name;
@@ -17,6 +16,7 @@ public class Customer {
     private String Password;
     private double Balance;
     private String Location;
-   // private List<Notification> NotificationList;
+    private Cart cart;
+    private Order order;
 
 }

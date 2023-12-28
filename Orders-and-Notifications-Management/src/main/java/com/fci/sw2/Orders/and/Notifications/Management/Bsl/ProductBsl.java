@@ -5,19 +5,21 @@ import com.fci.sw2.Orders.and.Notifications.Management.Model.Product;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 public class ProductBsl {
     private final DbLists dbLists;
-    public ProductBsl(DbLists dbLists){
+
+    public ProductBsl(DbLists dbLists) {
         this.dbLists = dbLists;
     }
 
-    public List<Product> listAvilableProduct(){
-        return dbLists.listAvilableProduct();
-    }
+    // public List<Product> listAvilableProduct(){
+    // return dbLists.listAvilableProduct();
+    // }
 
-    public List<Product> getProductsByCategory(String nameCategory){
-        return dbLists.getProductsByCategory(nameCategory);
-    }
+    // public List<Product> getProductsByCategory(String nameCategory){
+    // return dbLists.getProductsByCategory(nameCategory);
+    // }
 
 }

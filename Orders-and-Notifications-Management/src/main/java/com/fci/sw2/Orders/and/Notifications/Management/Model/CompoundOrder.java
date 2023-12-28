@@ -10,15 +10,14 @@ import lombok.Setter;
 @Getter
 
 public class CompoundOrder extends Order {
-    private Order O;
-    Map<Integer, List<Order>> map; // remove?
+    List<Order> orderes;
 
     // logic should change
-    public double CalculateTotalPrice() {
-        return 0.0;
-    }
+    // public double CalculateTotalPrice() {
+    // return 0.0;
+    // }
 
-    // should be added
+    // // should be added
     // addOrder(Order O): Void
     // removeOrder(Order O): Void
     // GetChild(OrderID: int): Order

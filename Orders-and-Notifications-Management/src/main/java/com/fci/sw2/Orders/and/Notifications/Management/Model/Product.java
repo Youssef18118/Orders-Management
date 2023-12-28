@@ -9,9 +9,10 @@ import lombok.Setter;
 public class Product {
     private int SerialNo;
     private String Name;
-   // private String Vendor;
+    private String Vendor;
     private double Price;
-    private String category;
-    private int quantum;
+    private Category category;
+    private int quantity;
+    private int remainingParts;
 
 }
