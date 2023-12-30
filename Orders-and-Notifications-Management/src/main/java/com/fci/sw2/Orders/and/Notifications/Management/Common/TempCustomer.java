@@ -6,8 +6,11 @@ public class TempCustomer {
 
     static Customer TempCustomer;
 
-    static Customer getTempCustomer() {
+    public static Customer getTempCustomer() {
         return TempCustomer;
     }
 
+    public static void setTempCustomer(Customer tempCustomer) {
+        TempCustomer = tempCustomer;
+    }
 }

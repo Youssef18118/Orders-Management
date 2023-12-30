@@ -1,12 +1,10 @@
 package com.fci.sw2.Orders.and.Notifications.Management.Controller;
 
 import com.fci.sw2.Orders.and.Notifications.Management.Bsl.ProductBsl;
+import com.fci.sw2.Orders.and.Notifications.Management.Model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,16 +14,60 @@ public class ProductController {
    @Autowired
    private ProductBsl productBsl;
 
-   // @GetMapping("/getAvilableProduct")
-   // public ResponseEntity<List> getAvilableProduct(){
-   // return ResponseEntity.ok(productBsl.listAvilableProduct());
-   // }
+   @GetMapping("/RemoveProduct/{id}")
+   public ResponseEntity<String> removeProduct(@PathVariable("id") int id) {
+      String result = productBsl.removeProduct(id);
+      if (result != null) {
+         return ResponseEntity.ok(result);
+      } else {
+         return ResponseEntity.notFound().build();
+      }
+   }
 
-   // @GetMapping("/getByCategory/{nameCategory}")
-   // public ResponseEntity<List> getByCategory(@PathVariable("nameCategory")
-   // String nameCategory){
-   // return ResponseEntity.ok(productBsl.getProductsByCategory(nameCategory));
 
-   // }
+   @PostMapping("/addProduct")
+   public ResponseEntity<String> addProductEndpoint(@RequestBody Product product){
+      String message = productBsl.addProduct(product);
+      if (message != null) {
+         return ResponseEntity.ok(message);
+      } else {
+         return ResponseEntity.notFound().build();
+      }
+   }
+
+   @GetMapping("/listAllProducts")
+   public ResponseEntity<List<Product>> listAllProducts() {
+      List<Product> productList = productBsl.ListAllProducts();
+      if(productList != null){
+         return ResponseEntity.ok(productList);
+      }
+      else {
+         return ResponseEntity.notFound().build();
+
+      }
+   }
+
+   @GetMapping("/displayCategories")
+   public ResponseEntity<String> displayCategories() {
+      String categories = productBsl.displayCategories();
+      if (categories != null) {
+         return ResponseEntity.ok(categories);
+      } else {
+         return ResponseEntity.notFound().build();
+      }
+   }
+
+
+   @GetMapping("/displayCountProducts")
+   public ResponseEntity<String> displayCountProducts(){
+      String displayCountProducts = productBsl.displayCountProducts();
+      if (displayCountProducts != null) {
+         return ResponseEntity.ok(displayCountProducts);
+      } else {
+         return ResponseEntity.notFound().build();
+      }
+
+
+   }
 
 }

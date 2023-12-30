@@ -61,4 +61,12 @@ public class DbLists implements Db {
 
     }
 
+    public Map<String, List<Product>> getCategoryMap() {
+        return Categories;
+    }
+
+    public void setCategoryMap(Map<String, List<Product>> categoryMap) {
+        Categories = categoryMap;
+    }
+
 }

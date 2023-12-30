@@ -14,10 +14,11 @@ public class Customer {
     private Integer customerId;
     private String name;
     private String Email;
-    private String Password;
+    private String password;
     private double Balance;
     private String Location;
     private Cart cart;
     private Order order;
+
 
 }
