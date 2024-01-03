@@ -2,6 +2,8 @@ package com.fci.sw2.Orders.and.Notifications.Management.Model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +12,18 @@ import lombok.Setter;
 
 public class SimpleRequestFactory {
 
-    private int CustomerID;
+    @JsonProperty("CustomerID")
+    private Integer CustomerID;
+
+    @JsonProperty("ProductsSerialNo")
     private List<Integer> ProductsSerialNo;
+
+    public Integer getCustomerID() {
+        return CustomerID;
+    }
+
+    public List<Integer> getProductsSerialNo() {
+        return ProductsSerialNo;
+    }
 
 }

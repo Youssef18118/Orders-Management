@@ -11,15 +11,25 @@ import java.util.Map;
 
 @Service
 public class ProductBsl {
-    private final DbLists dbLists;
+    private static DbLists dbLists = new DbLists();
 
     public ProductBsl(DbLists dbLists) {
         this.dbLists = dbLists;
     }
 
     public String addProduct(Product product) {
-        String nameCategory = product.getNameCategory();
-        Map<String, List<Product>> categoryMap = dbLists.getCategoryMap();
+        // System.out.println("Product getSerialNo" + product.getSerialNo());
+        // System.out.println("Product getName" + product.getName());
+        // System.out.println("Product getQuantity" + product.getQuantity());
+        // System.out.println("Product getVendor" + product.getVendor());
+        // System.out.println("Product getPrice" + product.getPrice());
+        // System.out.println("Product getCategory().getName()" +
+        // product.getCategory().getName());
+        // System.out.println("Product getCategory().getCategoryID()" +
+        // product.getCategory().getCategoryID());
+
+        String nameCategory = product.getCategory().getName();
+        Map<String, List<Product>> categoryMap = dbLists.Categories;
 
         for (Product P : dbLists.getProducts()) {
             if (P.getSerialNo() == product.getSerialNo()) {
@@ -29,7 +39,7 @@ public class ProductBsl {
 
         if (categoryMap == null) {
             categoryMap = new HashMap<>(); // Initialize the map if it's null
-            dbLists.setCategoryMap(categoryMap); // Set the initialized map back to dbLists
+            dbLists.Categories = categoryMap; // Set the initialized map back to dbLists
         }
 
         if (!categoryMap.containsKey(nameCategory)) {
@@ -52,7 +62,7 @@ public class ProductBsl {
             return categoriesString.toString();
         }
 
-        for (Map.Entry<String, List<Product>> entry : dbLists.getCategoryMap().entrySet()) {
+        for (Map.Entry<String, List<Product>> entry : dbLists.Categories.entrySet()) {
             String categoryName = entry.getKey();
             categoriesString.append("Category: ").append(categoryName).append("\n");
         }
@@ -67,10 +77,10 @@ public class ProductBsl {
     public String displayCountProducts() {
         StringBuilder result = new StringBuilder();
 
-        if (dbLists.getCategoryMap().isEmpty()) {
+        if (dbLists.Categories.isEmpty()) {
             result.append("No categories found.");
         } else {
-            for (Map.Entry<String, List<Product>> entry : dbLists.getCategoryMap().entrySet()) {
+            for (Map.Entry<String, List<Product>> entry : dbLists.Categories.entrySet()) {
                 String categoryName = entry.getKey();
                 List<Product> productList = entry.getValue();
                 int productCount = productList.size();
@@ -83,8 +93,8 @@ public class ProductBsl {
     }
 
     public String removeProduct(int productSerialNo) {
-        if (dbLists.getCategoryMap() != null) {
-            dbLists.getCategoryMap().values()
+        if (dbLists.Categories != null) {
+            dbLists.Categories.values()
                     .forEach(productList -> productList.removeIf(product -> product.getSerialNo() == productSerialNo));
             return "Product with ID " + productSerialNo + " removed successfully.";
         } else {

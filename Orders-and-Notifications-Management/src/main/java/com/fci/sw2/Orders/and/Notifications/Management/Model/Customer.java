@@ -1,8 +1,8 @@
 package com.fci.sw2.Orders.and.Notifications.Management.Model;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,12 +13,20 @@ public class Customer {
 
     private Integer customerId;
     private String name;
-    private String Email;
+    private String email;
+    private String phoneNumber;
     private String password;
-    private double Balance;
-    private String Location;
+    private double balance;
+    private String location;
     private Cart cart;
-    private Order order;
+    private List<Order> order = new ArrayList<>();
 
+    public Customer() {
+
+    }
+
+    public void AddOrder(Order O) {
+        this.order.add(O);
+    }
 
 }

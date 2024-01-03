@@ -1,7 +1,7 @@
 package com.fci.sw2.Orders.and.Notifications.Management.Model;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,15 +10,21 @@ import lombok.Setter;
 @Getter
 
 public class CompoundOrder extends Order {
-    List<Order> orderes;
+    private List<Order> orderes = new ArrayList<>();
+
+    public CompoundOrder() {
+        super();
+
+    }
 
     public double CalculateTotalPrice() {
 
+        double sum = 0;
         for (Order ord : orderes) {
-            TotalPrice += ord.getTotalPrice();
+            sum += ord.CalculateTotalPrice();
         }
 
-        return TotalPrice;
+        return sum;
     }
 
     // should be added

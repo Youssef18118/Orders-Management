@@ -6,17 +6,19 @@ import com.fci.sw2.Orders.and.Notifications.Management.Model.Order;
 
 public class SimpleOrder extends Order {
     public SimpleOrder() {
-        OrderID++;
+        super();
+
     }
 
     public double CalculateTotalPrice() {
         List<Product> products = cart.getProducts();
 
+        double sum = 0;
         for (int i = 0; i < products.size(); i++) {
-            TotalPrice += products.get(i).getPrice();
+            sum += products.get(i).getPrice();
         }
 
-        return TotalPrice;
+        return sum;
     }
 
 }

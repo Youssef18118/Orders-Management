@@ -1,6 +1,6 @@
 package com.fci.sw2.Orders.and.Notifications.Management.Model;
 
-import java.util.List;
+import java.time.Instant;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,17 +9,22 @@ import lombok.Setter;
 @Setter
 
 public abstract class Order {
-
-    protected static int OrderID = 0;
+    private static Integer orderCounter = 0;
+    protected Integer OrderID;
     protected double TotalPrice;
     protected Shipping shipping;
     protected String Type;
     protected Cart cart;
-    protected int CustomerID;
+    protected Integer CustomerID;
+    protected Instant createdTime;
+
+    public Order() {
+        this.OrderID = ++orderCounter;
+    }
 
     public abstract double CalculateTotalPrice();
 
-    public int getOrderID() {
+    public Integer getOrderID() {
         return OrderID;
     }
 

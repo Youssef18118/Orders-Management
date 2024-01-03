@@ -11,18 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/customer")
+@RequestMapping("/api/customer")
 
 public class CustomerController {
     // private Customer customer;
     @Autowired
     private CustomerBsl customerBsl;
 
-    /*
-     * public CustomerController(CustomerBsl customerBsl) {
-     * this.customerBsl = customerBsl;
-     * }
-     */
     @PostMapping("/createAccount")
     public ResponseEntity<String> createAccount(@RequestBody Customer customer) {
         String message = customerBsl.createAccount(customer);

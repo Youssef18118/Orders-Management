@@ -1,9 +1,13 @@
 package com.fci.sw2.Orders.and.Notifications.Management.Bsl;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PostMapping;
+import java.util.Iterator;
+
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.fci.sw2.Orders.and.Notifications.Management.Common.DbLists;
@@ -17,14 +21,10 @@ import com.fci.sw2.Orders.and.Notifications.Management.Model.Shipping;
 import com.fci.sw2.Orders.and.Notifications.Management.Model.SimpleOrder;
 import com.fci.sw2.Orders.and.Notifications.Management.Model.SimpleRequestFactory;
 
+@Service
 public class OrderBsl {
     public static DbLists DB = new DbLists();
-
-    // public void createAccount(String username, double initialBalance, String
-    // address) {
-    // Customer customer = new Customer(username, initialBalance, address);
-    // DB.Customers.put(username, customer);
-    // }
+    public static NotificationBsl Nbsl = new NotificationBsl();
 
     public SimpleOrder placeSimpleOrder(@RequestBody SimpleRequestFactory req) {
 
@@ -40,7 +40,6 @@ public class OrderBsl {
 
         List<Product> productsDB = DB.getProducts();
         List<Integer> ProductsSerinalNo = req.getProductsSerialNo();
-
         // Getting products of the same serial No from DB
         for (Product P : productsDB) {
             for (Integer Serial : ProductsSerinalNo) {
@@ -57,18 +56,41 @@ public class OrderBsl {
         simple.setType("Simple");
         simple.setCart(cart);
         simple.setCustomerID(req.getCustomerID());
+        simple.setCreatedTime(Instant.now());
         double price = simple.CalculateTotalPrice();
+        simple.setTotalPrice(price);
 
-        if (price > customer.getBalance()) {
+        if (price <= customer.getBalance()) {
             customer.setBalance(customer.getBalance() - price);
+            for (Customer temp : DB.Customers) {
+                if (temp.getCustomerId() == customer.getCustomerId()) {
+                    temp.setBalance(customer.getBalance());
+                    // temp.setOrder(simple);
+                }
+            }
+        } else { // price > customer.getBalance()
+            System.out.println("Balance Not sufficient for placing Order");
+            return null; // should be here
+        }
+        if (simple == null) {
+            System.out.println("NUlllllllllllllllllllllllllllllll");
         }
 
+        if (customer.getOrder() == null) {
+            List<Order> Os = new ArrayList<>();
+            customer.setOrder(Os);
+        }
+        customer.AddOrder(simple); // should be here to link customer with his order
+
         DB.Orders.add(simple); // adding to Orders In DB
+
+        Nbsl.CreateNotification(simple);
         return simple;
     }
 
     public CompoundOrder placeCompoundOrder(@RequestBody CompundRequestFactory req) {
         Customer customer = new Customer(); //
+        List<String> cities = new ArrayList<String>();
         // get customer from DB
         for (Customer temp : DB.Customers) {
             if (temp.getCustomerId() == req.getCustomerID()) {
@@ -80,7 +102,6 @@ public class OrderBsl {
 
         List<Product> productsDB = DB.getProducts();
         List<Integer> ProductsSerinalNo = req.getProductsSerialNo();
-
         // Getting products of the same serial No from DB
         for (Product P : productsDB) {
             for (Integer Serial : ProductsSerinalNo) {
@@ -97,11 +118,30 @@ public class OrderBsl {
         simple.setType("Simple");
         simple.setCart(cart);
         simple.setCustomerID(req.getCustomerID());
+        simple.setCreatedTime(Instant.now());
         double price = simple.CalculateTotalPrice();
+        simple.setTotalPrice(price);
 
-        if (price > customer.getBalance()) {
+        if (price <= customer.getBalance()) {
             customer.setBalance(customer.getBalance() - price);
+            for (Customer temp : DB.Customers) {
+                if (temp.getCustomerId() == customer.getCustomerId()) {
+                    temp.setBalance(customer.getBalance());
+                    cities.add(temp.getLocation()); // adding location to cities
+                    // temp.setOrder(simple);
+                }
+            }
+        } else { // price > customer.getBalance()
+            System.out.println("Balance Not sufficient for placing Order");
+            return null; // should be here
         }
+
+        if (customer.getOrder() == null) {
+            List<Order> Os = new ArrayList<Order>();
+            customer.setOrder(Os);
+        }
+        customer.AddOrder(simple); // should be here to link customer with his order
+        DB.Orders.add(simple); // should be here as this order should be avilable in DB
 
         // create Compound Order
         CompoundOrder compound = new CompoundOrder();
@@ -113,270 +153,311 @@ public class OrderBsl {
         orders.add(simple);
 
         // loop over Orders in Db
-        for (Order Order : DB.Orders) {
-            for (Integer OrderID : req.getOrderIDs()) {
-                if (OrderID == Order.getOrderID()) {
-                    OrdersDB.add(Order);
+        List<Integer> orderIDs = req.getOrderIDs();
+
+        if (orderIDs != null) {
+            // System.out.println("!null");
+            for (Order order : DB.Orders) {
+                for (Integer orderID : orderIDs) {
+                    if (orderID.equals(order.getOrderID())) { // check
+                        OrdersDB.add(order);
+                    }
                 }
-
             }
-
+        } else {
+            System.out.println("Order IDs passed null");
         }
 
         for (Order Order : OrdersDB) {
             orders.add(Order);
         }
 
+        for (Order O : orders) {
+            for (Customer c : DB.Customers) {
+                if (O.getCustomerID() == c.getCustomerId()) {
+                    cities.add(c.getLocation()); // adding simple order locations to cities
+                }
+            }
+        }
+
+        if (!areAllElementsEqual(cities)) { // if thery are not in the same geographical region, return null
+            System.out.println("Customers in Compound Order should be in the same geographical region");
+            return null;
+        }
+
         compound.setOrderes(orders);
         compound.setCustomerID(req.getCustomerID());
-        compound.CalculateTotalPrice();
 
-        DB.Orders.add(compound);
+        compound.setCreatedTime(Instant.now());
+
+        customer.AddOrder(compound); // seems wrong
+        DB.Orders.add(compound); // should be after that
 
         // Balance is already decremented for simple Order
 
+        compound.setTotalPrice(0.0);
         // set TotalPrice of Compound
         for (Order Order : compound.getOrderes()) {
             compound.setTotalPrice(compound.getTotalPrice() + Order.getTotalPrice());
         }
 
+        Nbsl.CreateNotification(simple);
+        Nbsl.CreateNotification(compound);
         return compound;
 
     }
-    // CompoundOrder compoundOrder = new CompoundOrder(compoundOrderId); // Create
-    // an instance
 
-    // // Set orders using the instance
-    // ((CompoundOrder) compoundOrder).setOrders(orders);
+    public String ShipOrder(Integer orderid, String Location) {
+        Order temp = null;
+        Customer customer = new Customer();
+        for (Order Order : DB.Orders) {
+            if (Order.getOrderID() == orderid) {
+                temp = Order;
+                break;
+            }
 
-    // List<Order> successOrders = new ArrayList<>();
+        }
 
-    // // Deduct the order total from the balance of each customer
-    // if (isSameAddressForAllCustomers(orders)) {
-    // for (Order order : orders) {
-    // if (order instanceof SimpleOrder) {
-    // SimpleOrder simpleOrder = (SimpleOrder) order;
-    // String customerName = simpleOrder.getCustomerName();
-    // Customer customer = DB.Customers.get(customerName);
+        if (temp == null) { // if not found
+            return "Order not found!!!!";
+        }
 
-    // if (customer.getBalance() >= simpleOrder.calculateTotalPrice()) {
-    // double newBalance = customer.getBalance() -
-    // simpleOrder.calculateTotalPrice();
-    // customer.setBalance(newBalance);
-    // successOrders.add(simpleOrder);
-    // } else {
-    // System.out.println("Insufficient balance for Customer: " +
-    // customer.getUsername());
-    // }
-    // }
-    // }
+        if (temp.getShipping() != null) {
+            return "Already shipped!!";
+        }
 
-    // // Set orders using the instance
-    // ((CompoundOrder) compoundOrder).setOrders(successOrders);
+        for (Customer c : DB.Customers) { // get corrosponding Customer
+            if (temp.getCustomerID() == c.getCustomerId()) {
+                customer = c;
+                break;
+            }
+        }
 
-    // // Add the instance to DB.compoundOrders
-    // DB.Orders.add(compoundOrder);
-    // } else {
-    // System.out.println("Can't make compound order because of different
-    // locations");
-    // }
-    // }
+        Shipping ship = new Shipping();
+        ship.setShipLocation(Location);
 
-    // // should ship simple and compund Orders at the same time
-    // public void shipOrder(int orderId) {
-    // Order order = findSimpleOrder(orderId);
-    // if (order != null) {
-    // shipSimpleOrder(order);
-    // } else {
-    // System.out.println("Simple Order with ID " + orderId + " not found.");
-    // }
-    // }
+        // want to check for location first
+        if (temp.getType() == "Simple") {
+            if (Location.equals(customer.getLocation())) { // if registered Location is the same as Shipping location
 
-    // public static List<Order> getSimpleOrders() {
-    // List<Order> result = new ArrayList<>();
+                Order order = null;
+                for (Order O : customer.getOrder()) { // set Shipping in Customer class
+                    if (O.getOrderID() == orderid) {
+                        O.setShipping(ship); // set shipping
+                        O.setTotalPrice(O.getTotalPrice() + 100); // adding shipping price to total price
+                        order = O;
+                        break;
+                    }
+                }
+                customer.setBalance(customer.getBalance() - 100); // updating Balance
 
-    // for (Order order : DB.Orders) {
-    // if (order != null) {
-    // result.add(order);
-    // }
-    // }
+                for (Customer c : DB.Customers) {
+                    if (customer.getCustomerId() == c.getCustomerId()) {
+                        c.setBalance(customer.getBalance());
 
-    // return result;
-    // }
+                        Iterator<Order> iterator = c.getOrder().iterator();
+                        while (iterator.hasNext()) {
+                            Order O = iterator.next();
+                            if (O.getOrderID() == orderid) {
+                                iterator.remove(); // Use iterator to remove the element
+                            }
+                        }
 
-    // public static List<Order> getcompoundOrders() {
-    // List<Order> result = new ArrayList<>();
-    // for (Order order : DB.Orders) {
-    // if (order != null) {
-    // result.add(order);
-    // }
-    // }
+                        c.AddOrder(order); // Add Order AGAIN
+                        break;
+                    }
+                }
 
-    // return result;
-    // }
+                Nbsl.CreateNotification(temp);
 
-    // // public String shipCompoundOrder(int compoundOrderId) {
-    // // CompoundOrder compoundOrder = findCompoundOrder(compoundOrderId);
-    // // if (compoundOrder != null) {
-    // // shipCompoundOrder(compoundOrder);
-    // // } else {
-    // // return ("Compound Order with ID " + compoundOrderId + " not found.");
-    // // }
-    // // return null;
-    // // }
+                return "Simple Shippig done"; // not yet
+            } else {
+                return "You cant Ship outside your Location Zone";
+            }
+        } else { // compound Order
+            List<Order> orders = ((CompoundOrder) temp).getOrderes();
+            List<String> cities = new ArrayList<String>();
+            for (Order order : orders) {
+                for (Customer c : DB.Customers) {
+                    if (order.getCustomerID() == c.getCustomerId()) { // get corrosponding customerin DB
+                        cities.add(c.getLocation());// adding locations of Customers who are in compund in order in List
+                        break;
+                    }
+                }
 
-    // private Order findSimpleOrder(int orderId) {
-    // for (Order order : DB.simpleOrders) {
-    // if (((SimpleOrder) order).getOrderId() == orderId) {
-    // return order;
-    // }
-    // }
-    // return null;
-    // }
+            }
 
-    // private CompoundOrder findCompoundOrder(int compoundOrderId) {
-    // for (Order compoundOrder : DB.compoundOrders) {
-    // if (((CompoundOrder) compoundOrder).getCompoundOrderId() == compoundOrderId)
-    // {
-    // return ((CompoundOrder) compoundOrder);
-    // }
-    // }
-    // return null;
-    // }
+            if (!areAllElementsEqual(cities) || !Location.equals(cities.get(0))) {// if who are in compund order are not
+                                                                                  // in the same location
+                                                                                  // or Shipping Location doesn't match
+                                                                                  // their registered Location
 
-    // // private void shipSimpleOrder(Order order) {
-    // // String customerUserName = ((SimpleOrder) order).getCustomerName();
-    // // Customer customer = DB.customers.get(customerUserName);
-    // // Shipping ship = new OrderShipping();
-    // // if (ship.calculateFee(customer)) {
-    // // System.out.println(
-    // // "Simple Order with ID " + ((SimpleOrder) order).getOrderId() + " shipped.
-    // // Shipping Fee deducted.");
-    // // System.out.println("Customer " + customer.getUsername() + "'s new balance:
-    // $"
-    // // + customer.getBalance());
+                return "Shipping Not done!!";
+            }
 
-    // // } else {
-    // // System.out
-    // // .println("Insufficient balance to ship Simple Order with ID " +
-    // // ((simpleOrder) order).getOrderId());
-    // // }
-    // // }
+            // only set shipping to customer who made compund Ordee
 
-    // // public String shipCompoundOrder(CompoundOrder compoundOrder) {
-    // // List<Order> orders = compoundOrder.getOrders();
-    // // Shipping ship = new Shipping();
+            for (Order order : orders) {
+                for (Customer c : DB.Customers) {
+                    if (order.getCustomerID() == c.getCustomerId()) { // get corrosponding customerin DB
+                        c.setBalance(c.getBalance() - (100 / orders.size())); // updating Balance
 
-    // // double individualShipFee = ((Shipping) ship).getShipFee() / orders.size();
+                        for (Order O : c.getOrder()) { // Set Shipping of who made compund Order (maybe not good
+                                                       // practice)
+                            if (O.getType().equals("Compound")) {
+                                O.setShipping(ship);
+                                O.setTotalPrice(O.getTotalPrice() + 100);
 
-    // // for (Order order : orders) {
-    // // String customerUserName = ((SimpleOrder) order).getCustomerName();
-    // // Customer customer = DB.Customers.get(customerUserName);
-    // // if (ship.calculateFee(customer)) {
-    // // return "Shipping Order with ID " + ((SimpleOrder) order).getOrderId() +
-    // // " in Compound Order with ID " + compoundOrder.getCompoundOrderId() +
-    // // ". Customer " + customer.getUsername() + "'s new balance: $" +
-    // // customer.getBalance();
-    // // } else {
-    // // return "Insufficient balance to ship Order with ID " + ((simpleOrder)
-    // // order).getOrderId() +
-    // // " in Compound Order with ID " + compoundOrder.getCompoundOrderId() +
-    // // " for Customer: " + customer.getUsername();
-    // // }
-    // // }
-    // // return ""; // Add a default return statement if needed
-    // // }
+                            }
+                        }
 
-    // private boolean isSameAddressForAllCustomers(List<Order> orders) {
-    // // Assuming all orders are SimpleOrders for simplicity
-    // if (orders.isEmpty()) {
-    // return false; // No customers in the compound order
-    // }
-    // // String customerUserName =((simpleOrder) order).
-    // String CustomerName = ((SimpleOrder) orders.get(0)).getCustomerName();
-    // // DbLists DB;
-    // Customer customer = DB.Customers.get(CustomerName);
-    // String commonAddress = customer.getAddress();
+                        break;
+                    }
+                }
 
-    // for (Order order : orders) {
-    // String orderCustomerName = ((SimpleOrder) order).getCustomerName();
-    // Customer ordercustomer = DB.Customers.get(orderCustomerName);
-    // if (!commonAddress.equals(ordercustomer.getAddress())) {
-    // return false; // Found a different address
-    // }
-    // }
+            }
 
-    // return true; // All customers have the same address
-    // }
+        }
 
-    // public String displaySimpleOrders() {
-    // StringBuilder response = new StringBuilder();
+        Nbsl.CreateNotification(temp);
+        System.out.println("CreateNotification called");
 
-    // if (getSimpleOrders().isEmpty()) {
-    // response.append("No simple orders available.");
-    // } else {
-    // response.append("Simple Orders:\n");
+        return "Compound Shipping Done";
 
-    // for (Order order : getSimpleOrders()) {
-    // SimpleOrder simpleOrder = (SimpleOrder) order;
-    // String customerUserName = (simpleOrder).getCustomerName();
-    // Customer customer = DB.Customers.get(customerUserName);
+    }
 
-    // response.append("Order ID: ").append(simpleOrder.getOrderId()).append("\n");
-    // response.append("Customer: ").append(customer.getUsername()).append("\n");
-    // response.append("Customer Balance:
-    // ").append(customer.getBalance()).append("\n");
-    // response.append("Address: ").append(customer.getAddress()).append("\n");
-    // response.append("Total Price:
-    // ").append(simpleOrder.calculateTotalPrice()).append("\n");
-    // response.append("---------------\n");
-    // }
-    // }
+    public Order ListOrderDetails(Integer orderID) {
+        for (Order Order : DB.Orders) {
+            if (Order.getOrderID() == orderID) {
+                return Order;
+            }
+        }
+        return null;
+    }
 
-    // return response.toString();
-    // }
+    public String CancelShipOrder(Integer orderID) {
+        Order temp = null;
+        Customer customer = new Customer();
+        for (Order Order : DB.Orders) {
+            if (Order.getOrderID() == orderID) {
+                temp = Order;
+                break;
+            }
 
-    // public String displayCompoundOrders() {
-    // StringBuilder response = new StringBuilder();
+        }
 
-    // if (getcompoundOrders().isEmpty()) {
-    // response.append("No compound orders available.");
-    // } else {
-    // response.append("Compound Orders:\n");
+        if (temp == null) { // if not found
+            return "Order not found!!!!";
+        }
 
-    // for (Order order : getcompoundOrders()) {
-    // CompoundOrder compoundOrder = (CompoundOrder) order;
-    // List<Order> orders = compoundOrder.getOrders();
+        if (temp.getShipping() == null) {
+            return "Already no Shipping";
+        }
 
-    // response.append("Compound Order ID:
-    // ").append(compoundOrder.getCompoundOrderId()).append("\n");
+        Instant currentTime = Instant.now();
+        Instant createdTime = temp.getCreatedTime();
+        long timeDifferenceSeconds = Duration.between(createdTime, currentTime).getSeconds();
 
-    // for (Order subOrder : orders) {
-    // SimpleOrder simpleOrder = (SimpleOrder) subOrder;
-    // String customerUserName = (simpleOrder).getCustomerName();
-    // Customer customer = DB.Customers.get(customerUserName);
+        if (timeDifferenceSeconds > 60) { // if diff time is bigger than 60 seconds
+            return "Cannot cancel shipping order. Time limit (60 Seconds) exceeded!";
+        }
 
-    // response.append(" Sub Order ID:
-    // ").append(simpleOrder.getOrderId()).append("\n");
-    // response.append(" Customer: ").append(customer.getUsername()).append("\n");
-    // response.append(" Address: ").append(customer.getAddress()).append("\n");
-    // response.append(" Total Price:
-    // ").append(simpleOrder.calculateTotalPrice()).append("\n");
-    // response.append(" ---------------\n");
-    // }
+        for (Customer c : DB.Customers) { // get corrosponding Customer
+            if (temp.getCustomerID() == c.getCustomerId()) {
+                customer = c;
+                break;
+            }
+        }
 
-    // // Check if all customers in the compound order have the same address
-    // if (isSameAddressForAllCustomers(orders)) {
-    // response.append(" All customers have the same address.\n");
-    // } else {
-    // response.append(" Customers have different addresses.\n");
-    // }
+        for (Order O : customer.getOrder()) {
+            if (O.getOrderID() == orderID) {
+                O.setShipping(null); // set shipping to null
+                break;
+            }
+        }
 
-    // response.append("---------------\n");
-    // }
-    // }
+        customer.setBalance(customer.getBalance() + 100); // incrementing Balance after cancelleing Shipping
 
-    // return response.toString();
-    // }
+        for (Customer c : DB.Customers) { // updating this customer Balance in DB
+            if (customer.getCustomerId() == c.getCustomerId()) {
+                c.setBalance(customer.getBalance());
+            }
+        }
+
+        return "shipping of OrderID" + orderID + " has beeen canceled successfully";
+
+    }
+
+    public String CancelOrder(Integer orderID) {
+        Order temp = null;
+        Customer customer = new Customer();
+        double Price = 0;
+        for (Order Order : DB.Orders) {
+            if (Order.getOrderID() == orderID) {
+                temp = Order;
+                break;
+            }
+
+        }
+
+        if (temp == null) { // if Order not found
+            return "Order not found!!!!";
+        }
+
+        Instant currentTime = Instant.now();
+        Instant createdTime = temp.getCreatedTime();
+        long timeDifferenceSeconds = Duration.between(createdTime, currentTime).getSeconds();
+
+        if (timeDifferenceSeconds > 30) { // if diff time is bigger than 30 seconds
+            return "Cannot cancel order. Time limit (30 Seconds) exceeded!";
+        }
+
+        for (Customer c : DB.Customers) { // get corrosponding Customer
+            if (temp.getCustomerID() == c.getCustomerId()) {
+                customer = c;
+                break;
+            }
+        }
+
+        DB.Orders.remove(temp); // remove Order from DB
+
+        for (Order O : customer.getOrder()) {
+            if (O.getOrderID() == orderID) {
+                Price = O.getTotalPrice(); // getting price from Order before cancelling
+                customer.getOrder().remove(O); // remove Order from list of customers orders
+                break;
+            }
+        }
+
+        customer.setBalance(customer.getBalance() + Price); // incrementing Balance after cancelleing Order
+
+        for (Customer c : DB.Customers) { // updating this customer Balance in DB
+            if (customer.getCustomerId() == c.getCustomerId()) {
+                c.setBalance(customer.getBalance());
+            }
+        }
+
+        return "OrderID" + orderID + " has beeen canceled successfully";
+
+    }
+
+    public boolean areAllElementsEqual(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            // Handle the case of an empty or null list according to your requirements.
+            return false;
+        }
+
+        // Get the first element as the reference value
+        String referenceValue = list.get(0);
+
+        // Compare each element with the reference value
+        for (String element : list) {
+            if (!referenceValue.equals(element)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 }

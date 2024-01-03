@@ -7,12 +7,12 @@ import lombok.Setter;
 @Getter
 
 public class OrderTemplate implements Template {
-    private int CustomerID;
-    private int OrderID;
+    private Integer CustomerID;
+    private double Price;
 
     @Override
     public String ToString() {
-        String message = "Order with ID " + OrderID + " is palced to Customer with ID " + CustomerID;
+        String message = "Order " + " is palced to Customer with ID " + CustomerID + " With total price " + Price;
         return message;
 
     }

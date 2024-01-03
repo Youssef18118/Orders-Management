@@ -8,7 +8,14 @@ import lombok.Setter;
 
 public class Shipping {
 
-    private int ShipID;
+    private static Integer ShipID = 0;
     private String ShipLocation;
 
+    public Shipping() {
+        ShipID++;
+    }
+
+    public Integer getShipID() {
+        return ShipID;
+    }
 }

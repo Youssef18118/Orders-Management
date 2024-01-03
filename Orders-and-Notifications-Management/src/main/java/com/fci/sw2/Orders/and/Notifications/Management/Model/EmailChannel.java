@@ -6,13 +6,17 @@ import lombok.Setter;
 @Setter
 @Getter
 
-public class EmailChannel implements Channel {
+public class EmailChannel extends Channel {
     private String Email;
 
     @Override
     public String ToSend() {
         String message = "Simulating Sending Notification through Email TO : " + Email;
         return message;
+    }
+
+    public void setType(String type) {
+        this.Type = type;
     }
 
 }
